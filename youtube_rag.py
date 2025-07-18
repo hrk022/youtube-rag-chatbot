@@ -9,26 +9,6 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from urllib.parse import urlparse, parse_qs
 import uuid
-import random
-
-# ---- Proxies for YouTube Transcript API ----
-PROXIES = [
-    "http://103.78.96.246:8080",
-    "http://194.87.102.146:3128",
-    # Add more free HTTP proxies here
-]
-
-# ---- Authenticated Proxies ----
-AUTH_PROXIES = [
-    {
-        "http": "http://lqmgbesh:b61o8yc2ek4f@38.154.227.167:5868",
-        "https": "http://lqmgbesh:b61o8yc2ek4f@38.154.227.167:5868"
-    },
-    {
-        "http": "http://lqmgbesh:b61o8yc2ek4f@23.95.150.145:6114",
-        "https": "http://lqmgbesh:b61o8yc2ek4f@23.95.150.145:6114"
-    }
-]
 
 # ---- Streaming Token Callback Handler ----
 class StreamHandler(BaseCallbackHandler):
@@ -56,33 +36,22 @@ def extract_video_id(url):
             return query.path.split("/")[2]
     return None
 
-# ---- Fetch Transcript with Proxy Rotation ----
-# ---- Fetch Transcript using Free & Authenticated Proxies ----
+# ---- Fetch Transcript (No Proxy) ----
 def fetch_transcript(video_id):
-    proxy_pool = [{"http": p, "https": p} for p in PROXIES] + AUTH_PROXIES
-
-    for proxy in proxy_pool:
-        try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxy)
-            return transcript
-        except (TranscriptsDisabled, NoTranscriptFound):
-            st.error("Transcript not available for this video.")
-            return None
-        except Exception:
-            st.warning(f"Proxy failed: {proxy['http']}")
-
-    # Try direct connection if all proxies fail
     try:
-        st.info("Trying direct connection...")
-        return YouTubeTranscriptApi.get_transcript(video_id)
-    except Exception:
-        st.error("All proxies failed. Direct connection failed too.")
-        return None
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        return transcript
+    except TranscriptsDisabled:
+        st.error("❌ Transcripts are disabled for this video.")
+    except NoTranscriptFound:
+        st.error("❌ No transcript found for this video.")
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {str(e)}")
+    return None
 
 # ---- Transcript Processing & Vector Store ----
-
 def process_transcript(video_id):
-    transcript = fetch_transcript(video_id)  # <- now using full proxy logic
+    transcript = fetch_transcript(video_id)
     if not transcript:
         return None
 
