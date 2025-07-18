@@ -1,0 +1,9 @@
+streamlit
+langchain
+langchain-community
+chromadb
+sentence-transformers
+youtube-transcript-api
+urllib3
+tqdm
+typing-extensions
