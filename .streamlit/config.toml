@@ -5,9 +5,9 @@ enableCORS = false
 enableXsrfProtection = false
 
 [theme]
-base = "light"
-primaryColor = "#FF4B4B"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F2F6"
-textColor = "#262730"
+base = "dark"
+primaryColor = "#4A90E2"  # Soft blue (calm and professional)
+backgroundColor = "#1E1E1E"  # True dark background
+secondaryBackgroundColor = "#2E2E2E"  # Slight contrast for cards/boxes
+textColor = "#E0E0E0"  # Light gray text, not pure white (less eye strain)
 font = "sans serif"
