@@ -6,16 +6,16 @@ from langchain.chains import RetrievalQA
 from langchain_community.chat_models import ChatOllama
 from langchain.callbacks.base import BaseCallbackHandler
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from urllib.parse import urlparse, parse_qs
 import uuid
+import os
 
 # ---- Streaming Token Callback Handler ----
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, container):
         self.container = container
         self.text = ""
-
+    
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         self.text += token
         self.container.markdown(self.text + "▌")  # typing cursor effect
@@ -36,23 +36,19 @@ def extract_video_id(url):
             return query.path.split("/")[2]
     return None
 
-# ---- Fetch Transcript (No Proxy) ----
-def fetch_transcript(video_id):
-    try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        return transcript
-    except TranscriptsDisabled:
-        st.error("❌ Transcripts are disabled for this video.")
-    except NoTranscriptFound:
-        st.error("❌ No transcript found for this video.")
-    except Exception as e:
-        st.error(f"❌ Unexpected error: {str(e)}")
-    return None
+# ---- Session State Initialization ----
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+if "qa_chain" not in st.session_state:
+    st.session_state.qa_chain = None
 
 # ---- Transcript Processing & Vector Store ----
 def process_transcript(video_id):
-    transcript = fetch_transcript(video_id)
-    if not transcript:
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    except Exception as e:
+        st.error(f"Failed to fetch the transcript: {e}")
         return None
 
     full_text = " ".join(entry["text"] for entry in transcript)
@@ -64,13 +60,6 @@ def process_transcript(video_id):
     vectorstore = Chroma.from_documents(chunks, embedding=embeddings, persist_directory=vector_dir)
     vectorstore.persist()
     return vectorstore.as_retriever()
-
-# ---- Session State Initialization ----
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-if "qa_chain" not in st.session_state:
-    st.session_state.qa_chain = None
 
 # ---- YouTube URL Input ----
 youtube_url = st.text_input("🎬 Enter the URL of the YouTube video:")
@@ -85,7 +74,7 @@ if youtube_url and st.session_state.qa_chain is None:
                 st.session_state.qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
                 st.success("✅ Ready! Ask anything about the video 👇")
             else:
-                st.error("❌ Could not process the video. Please try another.")
+                st.error("❌ Could not process the video. Please check the URL or try another.")
     else:
         st.error("⚠️ Invalid YouTube URL.")
 
