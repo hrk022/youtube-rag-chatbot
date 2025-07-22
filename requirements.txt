@@ -1,9 +1,9 @@
 streamlit
 langchain
 langchain-community
-chromadb
+faiss-cpu
 sentence-transformers
 youtube-transcript-api
-urllib3
-tqdm
-typing-extensions
+python-dotenv
+transformers
+torch
